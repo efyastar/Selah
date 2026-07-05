@@ -42,21 +42,26 @@ def get_gloo_token():
     return response.json().get("access_token")
 
 @app.get("/verse")
-def get_verse(day: int = None):
+def get_verse(day: int = None, book: str = None, index: int = 0):
     from datetime import datetime
-    day_of_year = day if day else datetime.now().timetuple().tm_yday
-
+    
     headers = {
         "X-YVP-App-Key": YOUVERSION_APP_KEY,
         "Accept": "application/json"
     }
 
-    votd_response = requests.get(
-        f"https://api.youversion.com/v1/verse_of_the_days?day={day_of_year}",
-        headers=headers
-    )
-    votd_data = votd_response.json()
-    passage_id = votd_data["data"][0]["passage_id"]
+    if book:
+        chapter = (index // 5) + 1
+        verse_num = (index % 5) + 1
+        passage_id = f"{book}.{chapter}.{verse_num}"
+    else:
+        day_of_year = day if day else datetime.now().timetuple().tm_yday
+        votd_response = requests.get(
+            f"https://api.youversion.com/v1/verse_of_the_days?day={day_of_year}",
+            headers=headers
+        )
+        votd_data = votd_response.json()
+        passage_id = votd_data["data"][0]["passage_id"]
 
     verse_response = requests.get(
         f"https://api.youversion.com/v1/bibles/3034/passages/{passage_id}",
