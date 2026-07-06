@@ -79,9 +79,16 @@ function App() {
 
   useEffect(() => {
     if (showSelah) {
-      const verseUrl = mode === 'journey'
-        ? `${API}/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`
-        : `${API}/verse`;
+      let verseUrl;
+      if (mode === 'journey') {
+        verseUrl = `${API}/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`;
+      } else {
+        const counter = parseInt(localStorage.getItem('selah_day_counter') || '0');
+        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+        const offsetDay = ((dayOfYear + counter - 1) % 365) + 1;
+        verseUrl = `${API}/verse?day=${offsetDay}`;
+        localStorage.setItem('selah_day_counter', counter + 1);
+      }
 
       fetch(verseUrl)
         .then(res => res.json())

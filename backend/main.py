@@ -60,16 +60,17 @@ def get_verse(day: int = None, book: str = None, chapter: int = 1, start: int = 
     else:
         day_of_year = day if day else datetime.now().timetuple().tm_yday
         votd_response = requests.get(
-            f"https://api.youversion.com/v1/verse_of_the_days?day={day_of_year}",
+            f"https://api.youversion.com/v1/verse_of_the_days/{day_of_year}",
             headers=headers
         )
         votd_data = votd_response.json()
-        passage_id = votd_data["data"][0]["passage_id"]
-
-    verse_response = requests.get(
+        print("VOTD RESPONSE:", votd_data)
+        passage_id = votd_data.get("passage_id") or votd_data.get("data", [{}])[0].get("passage_id")
+        verse_response = requests.get(
         f"https://api.youversion.com/v1/bibles/3034/passages/{passage_id}",
         headers=headers
     )
+    print("PASSAGE RESPONSE:", verse_response.status_code, verse_response.text)
     return verse_response.json()
 
 @app.get("/reflection")
