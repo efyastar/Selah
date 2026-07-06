@@ -5,20 +5,22 @@ import BookPicker from './BookPicker';
 const API = 'https://selah-vx3l.onrender.com';
 
 function App() {
-  const videos = ['video1.mp4', 'video2.mp4', 'video3.mp4', 'video4.mp4', 'video5.mp4', 'video6.mp4', 'video7.mp4', 'video8.mp4', 'video9.mp4'];
+  const videos = ['video3.mp4', 'video5.mp4', 'video8.mp4', 'sunset.mp4'];
   const musicTracks = ['music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
 
   const [showSelah, setShowSelah] = useState(false);
   const [verse, setVerse] = useState(null);
   const [reflection, setReflection] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const [eventJustEnded, setEventJustEnded] = useState(false);
   const [currentEvent, setCurrentEvent] = useState("your session");
   const [mode, setMode] = useState(null);
   const [journeyBook, setJourneyBook] = useState('');
   const [journeyChapter, setJourneyChapter] = useState(1);
   const [journeyVerse, setJourneyVerse] = useState(1);
   const [versesPerMoment, setVersesPerMoment] = useState(1);
-  const [currentVideo, setCurrentVideo] = useState('video1.mp4');
+  const [currentVideo, setCurrentVideo] = useState('sunset.mp4');
   const [currentMusic, setCurrentMusic] = useState('music1.mp3');
 
   useEffect(() => {
@@ -50,6 +52,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (accessToken && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
     if (!accessToken) return;
     const interval = setInterval(() => {
       fetch(`${API}/calendar/check?access_token=${accessToken}`)
@@ -57,12 +65,12 @@ function App() {
         .then(data => {
           if (data.event_ended) {
             setCurrentEvent(data.event_name);
+            setEventJustEnded(true);
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('Selah', {
                 body: `${data.event_name} just ended. Take a moment to breathe.`,
               });
             }
-            setShowSelah(true);
           }
         });
     }, 60000);
@@ -87,12 +95,6 @@ function App() {
         .catch(err => console.log("REFLECTION ERROR:", err));
     }
   }, [showSelah]);
-
-  useEffect(() => {
-    if (accessToken && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, [accessToken]);
 
   const playAudio = () => {
     setTimeout(() => {
@@ -124,6 +126,7 @@ function App() {
     setShowSelah(false);
     setVerse(null);
     setReflection(null);
+    setEventJustEnded(false);
     if (mode === 'journey') {
       const nextVerse = journeyVerse + versesPerMoment;
       setJourneyVerse(nextVerse);
@@ -163,10 +166,15 @@ function App() {
             <button onClick={closeSelah}>Return</button>
           </div>
         </div>
-      ) : !accessToken ? (
+      ) : !accessToken && !demoMode ? (
         <div className="prompt-screen">
-          <h2>Connect your calendar to begin your Selah journey</h2>
+          <h2>Selah brings Scripture into the quiet moments after your classes, meetings, and work sessions.</h2>
           <button onClick={handleConnect}>Connect Google Calendar</button>
+          <button onClick={() => {
+            setDemoMode(true);
+            setCurrentEvent("Your study session");
+            setEventJustEnded(true);
+          }}>Try Demo Mode</button>
         </div>
       ) : !mode ? (
         <div className="prompt-screen">
@@ -193,12 +201,19 @@ function App() {
         }} />
       ) : (
         <div className="prompt-screen">
-          <h2>Your session just ended. Take a Selah moment?</h2>
-          <button onClick={() => {
-            setShowSelah(true);
-            playAudio();
-          }}>Yes</button>
-          <button onClick={closeSelah}>Not now</button>
+          <h2>{eventJustEnded
+            ? `${currentEvent} just ended. Take a Selah moment?`
+            : "Selah is watching over your day. Your next moment will find you."}</h2>
+          {eventJustEnded && (
+            <button onClick={() => {
+              setShowSelah(true);
+              playAudio();
+            }}>Yes</button>
+          )}
+          {eventJustEnded && <button onClick={closeSelah}>Not now</button>}
+          {demoMode && !eventJustEnded && (
+            <button onClick={() => setEventJustEnded(true)}>Simulate a session ending</button>
+          )}
           <button className="settings-btn" onClick={openSettings}>⚙ Change Mode</button>
         </div>
       )}
