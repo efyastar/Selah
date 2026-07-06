@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
 app = FastAPI()
+
+FRONTEND_URL = "https://selah-hkgl1du2y-efyastars-projects.vercel.app"
+BACKEND_URL = "https://selah-vx3l.onrender.com"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", FRONTEND_URL],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -42,18 +43,20 @@ def get_gloo_token():
     return response.json().get("access_token")
 
 @app.get("/verse")
-def get_verse(day: int = None, book: str = None, index: int = 0):
+def get_verse(day: int = None, book: str = None, chapter: int = 1, start: int = 1, count: int = 1):
     from datetime import datetime
-    
+
     headers = {
         "X-YVP-App-Key": YOUVERSION_APP_KEY,
         "Accept": "application/json"
     }
 
     if book:
-        chapter = (index // 5) + 1
-        verse_num = (index % 5) + 1
-        passage_id = f"{book}.{chapter}.{verse_num}"
+        if count > 1:
+            end = start + count - 1
+            passage_id = f"{book}.{chapter}.{start}-{book}.{chapter}.{end}"
+        else:
+            passage_id = f"{book}.{chapter}.{start}"
     else:
         day_of_year = day if day else datetime.now().timetuple().tm_yday
         votd_response = requests.get(
@@ -97,7 +100,7 @@ def get_reflection(event: str = "class"):
 def login():
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": "http://localhost:8000/auth/callback",
+        "redirect_uri": f"{BACKEND_URL}/auth/callback",
         "response_type": "code",
         "scope": "https://www.googleapis.com/auth/calendar.readonly",
         "access_type": "offline",
@@ -114,28 +117,13 @@ def callback(code: str, state: str = None):
             "code": code,
             "client_id": GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": "http://localhost:8000/auth/callback",
+            "redirect_uri": f"{BACKEND_URL}/auth/callback",
             "grant_type": "authorization_code"
         }
     )
     tokens = token_response.json()
     access_token = tokens.get("access_token")
-    return RedirectResponse(url=f"http://localhost:3000?token={access_token}")
-
-@app.get("/calendar/events")
-def get_events(access_token: str):
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-        headers=headers,
-        params={
-            "maxResults": 5,
-            "orderBy": "startTime",
-            "singleEvents": True,
-            "timeMin": "2026-01-01T00:00:00Z"
-        }
-    )
-    return response.json()
+    return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
 
 @app.get("/calendar/check")
 def check_calendar(access_token: str):

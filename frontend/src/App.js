@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import BookPicker from './BookPicker';
 
+const API = 'https://selah-vx3l.onrender.com';
+
 function App() {
   const videos = ['video1.mp4', 'video2.mp4', 'video3.mp4', 'video4.mp4', 'video5.mp4', 'video6.mp4', 'video7.mp4', 'video8.mp4', 'video9.mp4'];
   const musicTracks = ['music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
@@ -50,7 +52,7 @@ function App() {
   useEffect(() => {
     if (!accessToken) return;
     const interval = setInterval(() => {
-      fetch(`http://127.0.0.1:8000/calendar/check?access_token=${accessToken}`)
+      fetch(`${API}/calendar/check?access_token=${accessToken}`)
         .then(res => res.json())
         .then(data => {
           if (data.event_ended) {
@@ -65,14 +67,14 @@ function App() {
   useEffect(() => {
     if (showSelah) {
       const verseUrl = mode === 'journey'
-        ? `http://127.0.0.1:8000/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`
-        : 'http://127.0.0.1:8000/verse';
+        ? `${API}/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`
+        : `${API}/verse`;
 
       fetch(verseUrl)
         .then(res => res.json())
         .then(data => setVerse(data));
 
-      fetch(`http://127.0.0.1:8000/reflection?event=${currentEvent}`)
+      fetch(`${API}/reflection?event=${currentEvent}`)
         .then(res => res.json())
         .then(data => {
           setReflection(data.reflection);
@@ -93,7 +95,7 @@ function App() {
   }, [showSelah]);
 
   const handleConnect = () => {
-    fetch('http://127.0.0.1:8000/auth/login')
+    fetch(`${API}/auth/login`)
       .then(res => res.json())
       .then(data => {
         window.location.href = data.auth_url;
