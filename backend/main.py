@@ -11,7 +11,7 @@ load_dotenv()
 
 app = FastAPI()
 
-FRONTEND_URL = "https://selah-hkgl1du2y-efyastars-projects.vercel.app"
+FRONTEND_URL = "https://selah-five-mu.vercel.app"
 BACKEND_URL = "https://selah-vx3l.onrender.com"
 
 app.add_middleware(
