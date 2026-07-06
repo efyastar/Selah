@@ -83,12 +83,19 @@ function App() {
     }
   }, [showSelah]);
 
+  const playAudio = () => {
+    setTimeout(() => {
+      const audio = document.getElementById('selah-audio');
+      if (audio) {
+        audio.volume = 0.4;
+        audio.play().catch(() => {});
+      }
+    }, 100);
+  };
+
   useEffect(() => {
     const audio = document.getElementById('selah-audio');
-    if (showSelah && audio) {
-      audio.volume = 0.4;
-      audio.play();
-    } else if (!showSelah && audio) {
+    if (!showSelah && audio) {
       audio.pause();
       audio.currentTime = 0;
     }
@@ -131,7 +138,7 @@ function App() {
     <div>
       {showSelah ? (
         <div className="selah-screen">
-          <video autoPlay loop muted className="background-video">
+          <video autoPlay loop muted playsInline className="background-video">
             <source src={`/${currentVideo}`} type="video/mp4" />
           </video>
           <audio id="selah-audio" loop>
@@ -176,7 +183,10 @@ function App() {
       ) : (
         <div className="prompt-screen">
           <h2>Your session just ended. Take a Selah moment?</h2>
-          <button onClick={() => setShowSelah(true)}>Yes</button>
+          <button onClick={() => {
+            setShowSelah(true);
+            playAudio();
+          }}>Yes</button>
           <button onClick={closeSelah}>Not now</button>
           <button className="settings-btn" onClick={openSettings}>⚙ Change Mode</button>
         </div>
