@@ -218,8 +218,11 @@ function App() {
             }}>Yes</button>
           )}
           {eventJustEnded && <button onClick={closeSelah}>Not now</button>}
-          {demoMode && !eventJustEnded && (
-            <button onClick={() => setEventJustEnded(true)}>Simulate a session ending</button>
+          {!eventJustEnded && (
+            <button onClick={() => {
+              setEventJustEnded(true);
+              setCurrentEvent("your session");
+            }}>Take a Selah moment now</button>
           )}
           <button className="settings-btn" onClick={openSettings}>⚙ Change Mode</button>
         </div>
