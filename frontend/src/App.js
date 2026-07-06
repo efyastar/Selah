@@ -57,6 +57,11 @@ function App() {
         .then(data => {
           if (data.event_ended) {
             setCurrentEvent(data.event_name);
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Selah', {
+                body: `${data.event_name} just ended. Take a moment to breathe.`,
+              });
+            }
             setShowSelah(true);
           }
         });
@@ -82,6 +87,12 @@ function App() {
         .catch(err => console.log("REFLECTION ERROR:", err));
     }
   }, [showSelah]);
+
+  useEffect(() => {
+    if (accessToken && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [accessToken]);
 
   const playAudio = () => {
     setTimeout(() => {

@@ -155,3 +155,17 @@ def check_calendar(access_token: str):
                     "event_name": event.get("summary", "your session")
                 }
     return {"event_ended": False}
+
+
+@app.get("/bibles")
+def get_bibles():
+    headers = {
+        "X-YVP-App-Key": YOUVERSION_APP_KEY,
+        "Accept": "application/json"
+    }
+    response = requests.get(
+        "https://api.youversion.com/v1/bibles",
+        headers=headers,
+        params={"language_ranges[]": "en"}
+    )
+    return response.json()
