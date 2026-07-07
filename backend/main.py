@@ -54,7 +54,7 @@ def get_verse(day: int = None, book: str = None, chapter: int = 1, start: int = 
     if book:
         if count > 1:
             end = start + count - 1
-            passage_id = f"{book}.{chapter}.{start}-{book}.{chapter}.{end}"
+            passage_id = f"{book}.{chapter}.{start}-{end}"
         else:
             passage_id = f"{book}.{chapter}.{start}"
     else:
