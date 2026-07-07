@@ -129,27 +129,26 @@ def callback(code: str, state: str = None):
 def check_calendar(access_token: str):
     from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
-    five_min_ago = (now - timedelta(minutes=5)).isoformat()
-    now_iso = now.isoformat()
+    window_start = now - timedelta(minutes=5)
 
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(
         "https://www.googleapis.com/calendar/v3/calendars/primary/events",
         headers=headers,
         params={
-            "maxResults": 5,
+            "maxResults": 10,
             "orderBy": "startTime",
             "singleEvents": True,
-            "timeMin": five_min_ago,
-            "timeMax": now_iso
+            "timeMin": (now - timedelta(hours=12)).isoformat(),
+            "timeMax": (now + timedelta(hours=12)).isoformat()
         }
     )
     events = response.json().get("items", [])
     for event in events:
         end_time = event.get("end", {}).get("dateTime")
         if end_time:
-            end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-            if five_min_ago <= end_time <= now_iso:
+            end_dt = datetime.fromisoformat(end_time)
+            if window_start <= end_dt <= now:
                 return {
                     "event_ended": True,
                     "event_name": event.get("summary", "your session")
