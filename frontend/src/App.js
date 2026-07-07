@@ -175,6 +175,7 @@ function App() {
         </div>
       ) : !accessToken && !demoMode ? (
         <div className="prompt-screen">
+          <img src="/logo.png" alt="Selah" className="welcome-logo" />
           <h2>Selah brings Scripture into the quiet moments after your classes, meetings, and work sessions.</h2>
           <button onClick={handleConnect}>Connect Google Calendar</button>
           <button onClick={() => {
