@@ -143,18 +143,23 @@ def check_calendar(access_token: str):
             "timeMax": (now + timedelta(hours=12)).isoformat()
         }
     )
-    events = response.json().get("items", [])
+    data = response.json()
+    print("CAL STATUS:", response.status_code)
+    print("CAL RESPONSE:", data)
+    print("NOW:", now.isoformat(), "WINDOW START:", window_start.isoformat())
+    events = data.get("items", [])
     for event in events:
         end_time = event.get("end", {}).get("dateTime")
+        print("EVENT:", event.get("summary"), "ENDS:", end_time)
         if end_time:
             end_dt = datetime.fromisoformat(end_time)
+            print("PARSED END:", end_dt, "IN WINDOW:", window_start <= end_dt <= now)
             if window_start <= end_dt <= now:
                 return {
                     "event_ended": True,
                     "event_name": event.get("summary", "your session")
                 }
     return {"event_ended": False}
-
 
 @app.get("/bibles")
 def get_bibles():
