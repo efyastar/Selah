@@ -123,43 +123,62 @@ def callback(code: str, state: str = None):
     )
     tokens = token_response.json()
     access_token = tokens.get("access_token")
-    return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
+    refresh_token = tokens.get("refresh_token", "")
+    return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}&refresh={refresh_token}")
+
+def refresh_access_token(refresh_token):
+    response = requests.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token"
+        }
+    )
+    return response.json().get("access_token")
 
 @app.get("/calendar/check")
-def check_calendar(access_token: str):
+def check_calendar(access_token: str, refresh_token: str = None):
     from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
     window_start = now - timedelta(minutes=5)
 
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-        headers=headers,
-        params={
-            "maxResults": 10,
-            "orderBy": "startTime",
-            "singleEvents": True,
-            "timeMin": (now - timedelta(hours=12)).isoformat(),
-            "timeMax": (now + timedelta(hours=12)).isoformat()
-        }
-    )
+    def fetch_events(token):
+        headers = {"Authorization": f"Bearer {token}"}
+        return requests.get(
+            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            headers=headers,
+            params={
+                "maxResults": 10,
+                "orderBy": "startTime",
+                "singleEvents": True,
+                "timeMin": (now - timedelta(hours=12)).isoformat(),
+                "timeMax": (now + timedelta(hours=12)).isoformat()
+            }
+        )
+
+    response = fetch_events(access_token)
+
+    if response.status_code == 401 and refresh_token:
+        new_token = refresh_access_token(refresh_token)
+        if new_token:
+            response = fetch_events(new_token)
+            access_token = new_token
+
     data = response.json()
-    print("CAL STATUS:", response.status_code)
-    print("CAL RESPONSE:", data)
-    print("NOW:", now.isoformat(), "WINDOW START:", window_start.isoformat())
     events = data.get("items", [])
     for event in events:
         end_time = event.get("end", {}).get("dateTime")
-        print("EVENT:", event.get("summary"), "ENDS:", end_time)
         if end_time:
             end_dt = datetime.fromisoformat(end_time)
-            print("PARSED END:", end_dt, "IN WINDOW:", window_start <= end_dt <= now)
             if window_start <= end_dt <= now:
                 return {
                     "event_ended": True,
-                    "event_name": event.get("summary", "your session")
+                    "event_name": event.get("summary", "your session"),
+                    "new_access_token": access_token
                 }
-    return {"event_ended": False}
+    return {"event_ended": False, "new_access_token": access_token}
 
 @app.get("/bibles")
 def get_bibles():

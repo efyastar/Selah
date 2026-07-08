@@ -44,9 +44,11 @@ function App() {
 
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const refresh = params.get('refresh');
     if (token) {
       setAccessToken(token);
       localStorage.setItem('selah_token', token);
+      if (refresh) localStorage.setItem('selah_refresh', refresh);
       window.history.replaceState({}, '', '/');
     }
   }, []);
@@ -60,9 +62,14 @@ function App() {
   useEffect(() => {
     if (!accessToken) return;
     const interval = setInterval(() => {
-      fetch(`${API}/calendar/check?access_token=${accessToken}`)
+      const refreshToken = localStorage.getItem('selah_refresh');
+      fetch(`${API}/calendar/check?access_token=${accessToken}&refresh_token=${refreshToken || ''}`)
         .then(res => res.json())
         .then(data => {
+          if (data.new_access_token && data.new_access_token !== accessToken) {
+            setAccessToken(data.new_access_token);
+            localStorage.setItem('selah_token', data.new_access_token);
+          }
           if (data.event_ended) {
             setCurrentEvent(data.event_name);
             setEventJustEnded(true);
@@ -79,16 +86,9 @@ function App() {
 
   useEffect(() => {
     if (showSelah) {
-      let verseUrl;
-      if (mode === 'journey') {
-        verseUrl = `${API}/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`;
-      } else {
-        const counter = parseInt(localStorage.getItem('selah_day_counter') || '0');
-        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-        const offsetDay = ((dayOfYear + counter - 1) % 365) + 1;
-        verseUrl = `${API}/verse?day=${offsetDay}`;
-        localStorage.setItem('selah_day_counter', counter + 1);
-      }
+      const verseUrl = mode === 'journey'
+        ? `${API}/verse?book=${journeyBook}&chapter=${journeyChapter}&start=${journeyVerse}&count=${versesPerMoment}`
+        : `${API}/verse`;
 
       fetch(verseUrl)
         .then(res => res.json())
