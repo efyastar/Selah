@@ -1,0 +1,2 @@
+Collecting pywebpush
+  Downloading pywebpush-2.3.0-py3-none-any.whl.metadata (9.7 kB)

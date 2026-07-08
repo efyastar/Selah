@@ -53,6 +53,30 @@ function App() {
     }
   }, []);
 
+  const subscribeToPush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const registration = await navigator.serviceWorker.ready;
+    const keyRes = await fetch(`${API}/push/vapid-public-key`);
+    const { key } = await keyRes.json();
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key
+    });
+
+    await fetch(`${API}/push/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: accessToken, subscription })
+    });
+  };
+
+  useEffect(() => {
+    if (accessToken) {
+      subscribeToPush();
+    }
+  }, [accessToken]);
+
   useEffect(() => {
     if (accessToken && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
