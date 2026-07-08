@@ -9,6 +9,7 @@ function App() {
   const musicTracks = ['music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
 
   const [showSelah, setShowSelah] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [verse, setVerse] = useState(null);
   const [reflection, setReflection] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
@@ -181,7 +182,29 @@ function App() {
 
   return (
     <div>
-      {showSelah ? (
+      {showSettings ? (
+        <div className="prompt-screen">
+          <h2>Settings</h2>
+          <button onClick={() => {
+            setShowSettings(false);
+            openSettings();
+          }}>Change Mode (Daily / Journey)</button>
+          <button onClick={() => {
+            localStorage.clear();
+            setAccessToken(null);
+            setDemoMode(false);
+            setMode(null);
+            setShowSettings(false);
+          }}>Disconnect Calendar</button>
+          <button onClick={() => {
+            setShowSettings(false);
+            setDemoMode(true);
+            setCurrentEvent("Your study session");
+            setEventJustEnded(true);
+          }}>Try Demo Again</button>
+          <button className="settings-btn" onClick={() => setShowSettings(false)}>← Back</button>
+        </div>
+      ) : showSelah ? (
         <div className="selah-screen">
           <video autoPlay loop muted playsInline className="background-video">
             <source src={`/${currentVideo}`} type="video/mp4" />
@@ -249,7 +272,7 @@ function App() {
               setCurrentEvent("your session");
             }}>Take a Selah moment now</button>
           )}
-          <button className="settings-btn" onClick={openSettings}>⚙ Change Mode</button>
+          <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙ Settings</button>
         </div>
       )}
     </div>
