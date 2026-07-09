@@ -23,6 +23,9 @@ function App() {
   const [versesPerMoment, setVersesPerMoment] = useState(1);
   const [currentVideo, setCurrentVideo] = useState('sunset.mp4');
   const [currentMusic, setCurrentMusic] = useState('music1.mp3');
+  const [notificationPermission, setNotificationPermission] = useState(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  );
 
   useEffect(() => {
     const saved = localStorage.getItem('selah_token');
@@ -54,24 +57,24 @@ function App() {
     }
   }, []);
 
-    const subscribeToPush = async () => {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-      const registration = await navigator.serviceWorker.ready;
-      const keyRes = await fetch(`${API}/push/vapid-public-key`);
-      const { key } = await keyRes.json();
+  const subscribeToPush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const registration = await navigator.serviceWorker.ready;
+    const keyRes = await fetch(`${API}/push/vapid-public-key`);
+    const { key } = await keyRes.json();
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: key
-      });
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key
+    });
 
-      const refreshToken = localStorage.getItem('selah_refresh');
-      await fetch(`${API}/push/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken, subscription })
-      });
-    };
+    const refreshToken = localStorage.getItem('selah_refresh');
+    await fetch(`${API}/push/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken, subscription })
+    });
+  };
 
   useEffect(() => {
     if (accessToken) {
@@ -79,11 +82,41 @@ function App() {
     }
   }, [accessToken]);
 
-  useEffect(() => {
-    if (accessToken && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+  const enableNotifications = async () => {
+    if (!('Notification' in window)) {
+      alert('This browser does not support notifications.');
+      return;
     }
-  }, [accessToken]);
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission === 'granted') {
+      new Notification('Selah notifications enabled', {
+        body: 'Selah will remind you when it is time to pause.',
+        icon: '/logo192.png',
+      });
+    }
+  };
+
+  const sendSelahNotification = (eventName) => {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      const notification = new Notification('Take a Selah moment', {
+        body: `${eventName} just ended. Pause, breathe, and reflect.`,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        tag: 'selah-moment',
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        setShowSelah(true);
+      };
+    }
+  };
 
   useEffect(() => {
     if (!accessToken) return;
@@ -99,11 +132,7 @@ function App() {
           if (data.event_ended) {
             setCurrentEvent(data.event_name);
             setEventJustEnded(true);
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Selah', {
-                body: `${data.event_name} just ended. Take a moment to breathe.`,
-              });
-            }
+            sendSelahNotification(data.event_name);
           }
         });
     }, 60000);
@@ -272,6 +301,9 @@ function App() {
               setEventJustEnded(true);
               setCurrentEvent("your session");
             }}>Take a Selah moment now</button>
+          )}
+          {notificationPermission !== 'granted' && (
+            <button onClick={enableNotifications}>Enable Selah Notifications</button>
           )}
           <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙ Settings</button>
         </div>
