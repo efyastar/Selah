@@ -191,7 +191,7 @@ def check_calendar(access_token: str, refresh_token: str = None):
         if end_time:
             end_dt = datetime.fromisoformat(end_time)
             if window_start <= end_dt <= now:
-                subscription = push_subscriptions.get(access_token)
+                subscription = push_subscriptions.get(refresh_token)
                 if subscription:
                     send_push(subscription, "Selah", f"{event.get('summary', 'Your session')} just ended. Take a moment to breathe.")
                 return {
@@ -207,9 +207,9 @@ def get_vapid_public_key():
 
 @app.post("/push/subscribe")
 async def subscribe(request: dict):
-    access_token = request.get("access_token")
+    refresh_token = request.get("refresh_token")
     subscription = request.get("subscription")
-    push_subscriptions[access_token] = subscription
+    push_subscriptions[refresh_token] = subscription
     return {"status": "subscribed"}
 
 @app.get("/bibles")
