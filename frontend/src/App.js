@@ -132,6 +132,7 @@ function App() {
           if (data.event_ended) {
             setCurrentEvent(data.event_name);
             setEventJustEnded(true);
+            console.log("EVENT ENDED, CALLING NOTIFICATION:", data.event_name, "Permission:", Notification.permission);
             sendSelahNotification(data.event_name);
           }
         });
