@@ -107,7 +107,7 @@ function App() {
         body: `${eventName} just ended. Pause, breathe, and reflect.`,
         icon: '/logo192.png',
         badge: '/logo192.png',
-        tag: 'selah-moment',
+        tag: `selah-moment-${Date.now()}`,
         requireInteraction: true,
       });
 
