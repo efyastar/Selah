@@ -306,6 +306,7 @@ function App() {
           {notificationPermission !== 'granted' && (
             <button onClick={enableNotifications}>Enable Selah Notifications</button>
           )}
+          <button onClick={() => sendSelahNotification("Manual Test Event")}>Test Notification Function</button>
           <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙ Settings</button>
         </div>
       )}
