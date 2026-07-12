@@ -26,7 +26,6 @@ function App() {
   const [notificationPermission, setNotificationPermission] = useState(
     'Notification' in window ? Notification.permission : 'unsupported'
   );
-  const [notifiedEvents, setNotifiedEvents] = useState(new Set());
 
   useEffect(() => {
     const saved = localStorage.getItem('selah_token');
@@ -105,18 +104,23 @@ function App() {
             localStorage.setItem('selah_token', data.new_access_token);
           }
           if (data.event_ended) {
-            const eventKey = data.event_name;
-            if (!notifiedEvents.has(eventKey)) {
+            console.log("EVENT ENDED CHECK:", data.event_name, "last notified:", localStorage.getItem(`notified_${data.event_name}`), "now:", Date.now());
+            const eventKey = `notified_${data.event_name}`;
+            const alreadyNotified = localStorage.getItem(eventKey);
+            const lastNotifiedTime = alreadyNotified ? parseInt(alreadyNotified) : 0;
+            const now = Date.now();
+
+            if (now - lastNotifiedTime > 30 * 60 * 1000) {
               setCurrentEvent(data.event_name);
               setEventJustEnded(true);
               sendSelahNotification(data.event_name);
-              setNotifiedEvents(prev => new Set(prev).add(eventKey));
+              localStorage.setItem(eventKey, now.toString());
             }
           }
         });
     }, 60000);
     return () => clearInterval(interval);
-  }, [accessToken, notifiedEvents]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (showSelah) {
