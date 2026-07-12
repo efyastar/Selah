@@ -1,11 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from pywebpush import webpush, WebPushException
 import requests
 import base64
 import os
-import json
 import urllib.parse
 from dotenv import load_dotenv
 
@@ -28,11 +26,6 @@ GLOO_CLIENT_ID = os.getenv("GLOO_CLIENT_ID")
 GLOO_CLIENT_SECRET = os.getenv("GLOO_CLIENT_SECRET")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
-VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
-VAPID_CLAIM_EMAIL = os.getenv("VAPID_CLAIM_EMAIL")
-
-push_subscriptions = {}
 
 def get_gloo_token():
     auth = base64.b64encode(f"{GLOO_CLIENT_ID}:{GLOO_CLIENT_SECRET}".encode()).decode()
@@ -60,17 +53,6 @@ def refresh_access_token(refresh_token):
         }
     )
     return response.json().get("access_token")
-
-def send_push(subscription, title, body):
-    try:
-        webpush(
-            subscription_info=subscription,
-            data=json.dumps({"title": title, "body": body}),
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": VAPID_CLAIM_EMAIL}
-        )
-    except WebPushException as ex:
-        print("PUSH ERROR:", ex)
 
 @app.get("/verse")
 def get_verse(day: int = None, book: str = None, chapter: int = 1, start: int = 1, count: int = 1):
@@ -191,26 +173,12 @@ def check_calendar(access_token: str, refresh_token: str = None):
         if end_time:
             end_dt = datetime.fromisoformat(end_time)
             if window_start <= end_dt <= now:
-                subscription = push_subscriptions.get(refresh_token)
-                if subscription:
-                    send_push(subscription, "Selah", f"{event.get('summary', 'Your session')} just ended. Take a moment to breathe.")
                 return {
                     "event_ended": True,
                     "event_name": event.get("summary", "your session"),
                     "new_access_token": access_token
                 }
     return {"event_ended": False, "new_access_token": access_token}
-
-@app.get("/push/vapid-public-key")
-def get_vapid_public_key():
-    return {"key": VAPID_PUBLIC_KEY}
-
-@app.post("/push/subscribe")
-async def subscribe(request: dict):
-    refresh_token = request.get("refresh_token")
-    subscription = request.get("subscription")
-    push_subscriptions[refresh_token] = subscription
-    return {"status": "subscribed"}
 
 @app.get("/bibles")
 def get_bibles():
