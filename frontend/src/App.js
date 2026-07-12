@@ -26,6 +26,7 @@ function App() {
   const [notificationPermission, setNotificationPermission] = useState(
     'Notification' in window ? Notification.permission : 'unsupported'
   );
+  const [notifiedEvents, setNotifiedEvents] = useState(new Set());
 
   useEffect(() => {
     const saved = localStorage.getItem('selah_token');
@@ -57,31 +58,6 @@ function App() {
     }
   }, []);
 
-  const subscribeToPush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const registration = await navigator.serviceWorker.ready;
-    const keyRes = await fetch(`${API}/push/vapid-public-key`);
-    const { key } = await keyRes.json();
-
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: key
-    });
-
-    const refreshToken = localStorage.getItem('selah_refresh');
-    await fetch(`${API}/push/subscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken, subscription })
-    });
-  };
-
-  useEffect(() => {
-    if (accessToken) {
-      subscribeToPush();
-    }
-  }, [accessToken]);
-
   const enableNotifications = async () => {
     if (!('Notification' in window)) {
       alert('This browser does not support notifications.');
@@ -94,6 +70,7 @@ function App() {
     if (permission === 'granted') {
       new Notification('Selah notifications enabled', {
         body: 'Selah will remind you when it is time to pause.',
+        icon: '/logo192.png',
       });
     }
   };
@@ -104,6 +81,7 @@ function App() {
     if (Notification.permission === 'granted') {
       const notification = new Notification('Take a Selah moment', {
         body: `${eventName} just ended. Pause, breathe, and reflect.`,
+        icon: '/logo192.png',
         tag: `selah-moment-${Date.now()}`,
         requireInteraction: true,
       });
@@ -127,14 +105,18 @@ function App() {
             localStorage.setItem('selah_token', data.new_access_token);
           }
           if (data.event_ended) {
-            setCurrentEvent(data.event_name);
-            setEventJustEnded(true);
-            sendSelahNotification(data.event_name);
+            const eventKey = data.event_name;
+            if (!notifiedEvents.has(eventKey)) {
+              setCurrentEvent(data.event_name);
+              setEventJustEnded(true);
+              sendSelahNotification(data.event_name);
+              setNotifiedEvents(prev => new Set(prev).add(eventKey));
+            }
           }
         });
     }, 60000);
     return () => clearInterval(interval);
-  }, [accessToken]);
+  }, [accessToken, notifiedEvents]);
 
   useEffect(() => {
     if (showSelah) {
